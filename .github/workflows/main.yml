@@ -17,6 +17,20 @@ jobs:
         run: |
           docker build -t app_image_formation_fast:app_image_formation_fast .
           docker run -it --rm -p 8501:8501 app_image_formation_fast:app_image_formation_fast
-
+          
+      # Display phpMyAdmin URL  
+      - name: Install ngrok
+        run: |
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update
+          sudo apt install -y ngrok
+          
+      - name: Add ngrok authtoken
+        run: ngrok config add-authtoken ${{ secrets.NGROK_AUTHTOKEN }}
+        
+      - name: Expose phpMyAdmin to the internet
+        run: ngrok http 8000 &
+        
       - name: sleep
         run: sleep 600
