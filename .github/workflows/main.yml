@@ -19,7 +19,7 @@ jobs:
 
       - name: Run Streamlit Container
         run: |
-          docker run -it --rm -p 8501:8501 app_image_formation_fast:app_image_formation_fast
+          docker run -d --name streamlit_app -p 8501:8501 streamlit-app
           sleep 5  # 等待 container 啟動
           
       # Display phpMyAdmin URL  
