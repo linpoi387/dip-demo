@@ -1,48 +1,48 @@
-name: Checkout
+name: Streamlit Docker + Ngrok
 
 on:
   workflow_dispatch:
-  
+
 jobs:
-  checkout:
+  run:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: 檢出程式碼
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      # Step 2: 設定 Docker Compose
-      - name: Docker build image
-        run: |
-          docker build -t app_image_formation_fast:app_image_formation_fast .
+      - name: Build Docker Image
+        run: docker build -t app_image_formation_fast .
 
-      - name: Run Streamlit Container
-        run: |
-          docker run -d --name app_image_formation_fast -p 8501:8501 app_image_formation_fast
-          sleep 5  # 等待 container 啟動
-          
-      # Display phpMyAdmin URL  
+      - name: Run Streamlit Container (detached, no TTY)
+        run: docker run -d --name app_image_formation_fast -p 8501:8501 app_image_formation_fast
+
       - name: Install ngrok
         run: |
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-          sudo apt update
-          sudo apt install -y ngrok
-          
-      - name: Start ngrok tunnel
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+            | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+            | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install -y ngrok
+
+      - name: Start ngrok tunnel (no TTY)
         run: |
           ngrok config add-authtoken "${{ secrets.NGROK_AUTHTOKEN }}"
-          nohup ngrok http 8501 > ngrok.log 2>&1 &
+          nohup ngrok http 8501 --log=stdout > ngrok.log 2>&1 &
 
-      - name: Wait for ngrok to start
-        run: sleep 5
+      - name: Wait for ngrok to boot
+        run: sleep 6
 
-      - name: Show ngrok URL
+      - name: Show public ngrok URL
         run: |
-          curl -s http://127.0.0.1:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+          curl -s http://127.0.0.1:4040/api/tunnels \
+          | jq -r '.tunnels[0].public_url'
 
-      - name: Keep GitHub Actions alive
+      - name: Keep runner alive (no TTY needed)
         run: |
+          echo "Turn off workflow to stop the server."
+          while true; do sleep 60; done
+
+
           echo "Press Ctrl-C to stop"
           tail -f /dev/null
